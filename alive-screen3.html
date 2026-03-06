@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alive — Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── TIME-OF-DAY THEMING ── */
+  :root {
+    --cream: #f5f0e8;
+    --text-dark: #1a1410;
+    --accent: #c17f4a;
+  }
+
+  /* Dawn 5–8 */
+  body.dawn {
+    --bg: #1a0f1e;
+    --bg2: #2d1a3a;
+    --hot1: #ff6b9d;
+    --hot2: #c44dff;
+    --hot3: #ff9a3c;
+    --card-tint: rgba(255, 107, 157, 0.07);
+    --tag-color: #ff6b9d;
+    --nav-bg: rgba(26, 15, 30, 0.92);
+  }
+
+  /* Morning 8–12 */
+  body.morning {
+    --bg: #0d1a2e;
+    --bg2: #1a3a5c;
+    --hot1: #00d4ff;
+    --hot2: #7b2fff;
+    --hot3: #ff6b35;
+    --card-tint: rgba(0, 212, 255, 0.07);
+    --tag-color: #00d4ff;
+    --nav-bg: rgba(13, 26, 46, 0.92);
+  }
+
+  /* Afternoon 12–17 */
+  body.afternoon {
+    --bg: #0a1f0a;
+    --bg2: #1a4020;
+    --hot1: #39ff14;
+    --hot2: #ffdd00;
+    --hot3: #ff4500;
+    --card-tint: rgba(57, 255, 20, 0.06);
+    --tag-color: #39ff14;
+    --nav-bg: rgba(10, 31, 10, 0.92);
+  }
+
+  /* Golden hour 17–20 */
+  body.golden {
+    --bg: #1a0a00;
+    --bg2: #3d1800;
+    --hot1: #ff8c00;
+    --hot2: #ff4500;
+    --hot3: #ffd700;
+    --card-tint: rgba(255, 140, 0, 0.08);
+    --tag-color: #ff8c00;
+    --nav-bg: rgba(26, 10, 0, 0.92);
+  }
+
+  /* Evening 20–23 */
+  body.evening {
+    --bg: #0f0a06;
+    --bg2: #1e1208;
+    --hot1: #c17f4a;
+    --hot2: #8b5a2b;
+    --hot3: #e8a060;
+    --card-tint: rgba(193, 127, 74, 0.08);
+    --tag-color: #c17f4a;
+    --nav-bg: rgba(15, 10, 6, 0.92);
+  }
+
+  /* Night 23–5 */
+  body.night {
+    --bg: #080608;
+    --bg2: #120e14;
+    --hot1: #6a4aaa;
+    --hot2: #3a2a6a;
+    --hot3: #9a7acc;
+    --card-tint: rgba(106, 74, 170, 0.08);
+    --tag-color: #9a7acc;
+    --nav-bg: rgba(8, 6, 8, 0.95);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--cream);
+    transition: background 2s ease;
+  }
+
+  /* Ambient orbs */
+  .ambient {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(90px); opacity: 0.15;
+    animation: drift ease-in-out infinite;
+    transition: background 2s ease;
+  }
+  .orb1 { width: 400px; height: 400px; top: -100px; left: -80px; background: radial-gradient(circle, var(--hot1), transparent); animation-duration: 20s; }
+  .orb2 { width: 350px; height: 350px; bottom: -80px; right: -60px; background: radial-gradient(circle, var(--hot2), transparent); animation-duration: 25s; animation-delay: -8s; }
+  .orb3 { width: 250px; height: 250px; top: 45%; left: 45%; background: radial-gradient(circle, var(--hot3), transparent); animation-duration: 17s; animation-delay: -4s; }
+  @keyframes drift {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(25px,-18px) scale(1.06); }
+    66% { transform: translate(-18px,25px) scale(0.94); }
+  }
+
+  /* Grain */
+  .grain {
+    position: fixed; inset: -50%; width: 200%; height: 200%;
+    z-index: 1; opacity: 0.03; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: g .4s steps(1) infinite;
+  }
+  @keyframes g { 0%{transform:translate(0,0)} 25%{transform:translate(-2%,-3%)} 50%{transform:translate(1%,2%)} 75%{transform:translate(3%,-1%)} }
+
+  /* ── TOP NAV ── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--nav-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,248,238,0.06);
+    transition: background 2s ease;
+  }
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px; font-weight: 300;
+    letter-spacing: 0.18em;
+    color: var(--cream);
+  }
+  .nav-time {
+    font-size: 11px; font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--tag-color);
+    text-transform: uppercase;
+    transition: color 2s ease;
+  }
+  .nav-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--hot1), var(--hot2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: background 2s ease;
+  }
+
+  /* ── FEED ── */
+  .feed {
+    position: fixed; inset: 0;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .posts-container {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── POST ── */
+  .post {
+    position: relative;
+    flex: none;
+    width: 100%; height: 100vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .post-media {
+    position: absolute; inset: 0;
+    z-index: 0;
+  }
+
+  .post-gradient {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.15) 0%,
+      transparent 30%,
+      transparent 45%,
+      rgba(0,0,0,0.5) 65%,
+      rgba(0,0,0,0.88) 100%
+    );
+  }
+
+  /* Post content bottom */
+  .post-content {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    padding: 0 18px;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .post-content.conversation-open {
+    transform: translateY(-340px);
+  }
+
+  .post-meta {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .post-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex: none;
+    border: 1.5px solid rgba(255,248,238,0.3);
+  }
+
+  .post-user {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+
+  .post-username {
+    font-size: 13px; font-weight: 500;
+    color: var(--cream); letter-spacing: 0.01em;
+  }
+
+  .post-location {
+    font-size: 11px; font-weight: 300;
+    color: rgba(245,240,232,0.5); letter-spacing: 0.03em;
+  }
+
+  .post-tag {
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--tag-color);
+    border: 1px solid var(--tag-color);
+    background: rgba(0,0,0,0.3);
+    transition: color 2s ease, border-color 2s ease;
+  }
+
+  .post-caption {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; font-weight: 300; font-style: italic;
+    color: var(--cream); line-height: 1.35;
+    margin-bottom: 14px;
+    letter-spacing: 0.01em;
+  }
+
+  /* Reactions bar */
+  .reactions-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .react-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(255,248,238,0.08);
+    border: 1px solid rgba(255,248,238,0.12);
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(245,240,232,0.7);
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  .react-btn:hover, .react-btn.popped {
+    background: rgba(255,248,238,0.14);
+    border-color: rgba(255,248,238,0.25);
+    transform: scale(1.08);
+  }
+
+  .react-btn .count {
+    font-size: 11px; font-weight: 300;
+    color: rgba(245,240,232,0.5);
+  }
+
+  .react-btn.fired {
+    background: var(--card-tint);
+    border-color: var(--tag-color);
+    transform: scale(1.12);
+  }
+
+  .react-btn.fired .count { color: var(--tag-color); }
+
+  .convo-trigger {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 300;
+    color: rgba(245,240,232,0.5);
+    cursor: pointer;
+    padding: 6px 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s;
+  }
+
+  .convo-trigger:hover { color: rgba(245,240,232,0.8); }
+
+  .convo-trigger .bubble {
+    font-size: 16px;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .convo-trigger:hover .bubble { transform: scale(1.2); }
+
+  /* Swipe hint */
+  .swipe-hint {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-bottom: 20px;
+    font-size: 11px; font-weight: 300;
+    color: rgba(245,240,232,0.25);
+    letter-spacing: 0.1em;
+    animation: hint-pulse 2s ease-in-out 2s 3;
+  }
+
+  @keyframes hint-pulse {
+    0%,100% { opacity: 0.4; transform: translateY(0); }
+    50% { opacity: 0.8; transform: translateY(-3px); }
+  }
+
+  /* ── CONVERSATION DRAWER ── */
+  .convo-drawer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+    height: 380px;
+    background: rgba(12,8,4,0.97);
+    border-top: 1px solid rgba(255,248,238,0.1);
+    border-radius: 24px 24px 0 0;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    transform: translateY(100%);
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column;
+  }
+
+  .convo-drawer.open {
+    transform: translateY(0);
+  }
+
+  .drawer-handle {
+    width: 36px; height: 3px;
+    background: rgba(255,248,238,0.2);
+    border-radius: 2px;
+    margin: 12px auto 0;
+    flex: none;
+  }
+
+  .drawer-header {
+    padding: 12px 18px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex: none;
+    border-bottom: 1px solid rgba(255,248,238,0.06);
+  }
+
+  .drawer-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; font-weight: 300; font-style: italic;
+    color: var(--cream);
+  }
+
+  .drawer-count {
+    font-size: 11px; font-weight: 300;
+    color: rgba(245,240,232,0.35);
+    letter-spacing: 0.08em;
+  }
+
+  .convo-list {
+    flex: 1; overflow-y: auto;
+    padding: 14px 18px;
+    display: flex; flex-direction: column; gap: 16px;
+    scrollbar-width: none;
+  }
+
+  .convo-list::-webkit-scrollbar { display: none; }
+
+  .convo-item {
+    display: flex; gap: 10px;
+    animation: fade-up 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .convo-item:nth-child(1) { animation-delay: 0.05s; }
+  .convo-item:nth-child(2) { animation-delay: 0.12s; }
+  .convo-item:nth-child(3) { animation-delay: 0.19s; }
+  .convo-item:nth-child(4) { animation-delay: 0.26s; }
+
+  .convo-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    flex: none; display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .convo-body { flex: 1; }
+
+  .convo-user {
+    font-size: 12px; font-weight: 500;
+    color: rgba(245,240,232,0.7);
+    margin-bottom: 3px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .convo-badge {
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--tag-color);
+    padding: 2px 7px;
+    border: 1px solid var(--tag-color);
+    border-radius: 10px;
+    opacity: 0.8;
+    transition: color 2s ease, border-color 2s ease;
+  }
+
+  .convo-text {
+    font-size: 13px; font-weight: 300;
+    color: rgba(245,240,232,0.75);
+    line-height: 1.55;
+  }
+
+  .convo-text .reaction-inline {
+    display: inline-block;
+    background: rgba(255,248,238,0.07);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 12px;
+    margin: 0 2px;
+  }
+
+  /* Input row */
+  .convo-input-row {
+    padding: 12px 16px 20px;
+    display: flex; align-items: center; gap: 10px;
+    border-top: 1px solid rgba(255,248,238,0.06);
+    flex: none;
+  }
+
+  .convo-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255,248,238,0.06);
+    border: 1px solid rgba(255,248,238,0.1);
+    border-radius: 20px;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 300;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .convo-input::placeholder { color: rgba(245,240,232,0.25); }
+  .convo-input:focus { border-color: rgba(255,248,238,0.25); }
+
+  .convo-send {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--tag-color);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    color: var(--text-dark);
+  }
+
+  .convo-send:hover { transform: scale(1.1); }
+
+  /* ── REACTION PICKER ── */
+  .reaction-picker {
+    position: fixed;
+    z-index: 200;
+    background: rgba(12,8,4,0.96);
+    border: 1px solid rgba(255,248,238,0.12);
+    border-radius: 24px;
+    padding: 12px 16px;
+    display: flex; gap: 10px;
+    backdrop-filter: blur(30px);
+    transform: scale(0.8) translateY(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    bottom: 200px; left: 50%;
+    transform-origin: bottom center;
+    transform: translateX(-50%) scale(0.8);
+  }
+
+  .reaction-picker.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) scale(1);
+  }
+
+  .pick-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; padding: 6px 4px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pick-item:hover { background: rgba(255,248,238,0.08); transform: scale(1.15) translateY(-4px); }
+  .pick-emoji { font-size: 24px; }
+  .pick-label { font-size: 8px; font-weight: 300; color: rgba(245,240,232,0.4); letter-spacing: 0.05em; white-space: nowrap; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    padding: 12px 32px 24px;
+    display: flex; justify-content: space-around; align-items: center;
+    background: var(--nav-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,248,238,0.06);
+    transition: background 2s ease;
+  }
+
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; padding: 4px 12px;
+    opacity: 0.4; transition: opacity 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-item.active { opacity: 1; }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 9px; font-weight: 300; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream); }
+
+  /* Post backgrounds */
+  .bg-pottery { background: linear-gradient(160deg, #2a1810 0%, #5c3520 40%, #8b6040 70%, #b08060 100%); }
+  .bg-run { background: linear-gradient(140deg, #0a1a2a 0%, #1a3a5a 40%, #2a6080 70%, #3a90b0 100%); }
+  .bg-music { background: linear-gradient(150deg, #1a0a2a 0%, #3a1a5a 40%, #6a3a8a 70%, #9a60aa 100%); }
+  .bg-food { background: linear-gradient(155deg, #1a1000 0%, #3a2800 40%, #6a4a10 70%, #9a7030 100%); }
+  .bg-explore { background: linear-gradient(145deg, #001a0a 0%, #003a1a 40%, #10602a 70%, #308a50 100%); }
+
+  /* Visual elements in posts */
+  .post-visual {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 120px; opacity: 0.12;
+    user-select: none;
+  }
+
+  .post-visual-detail {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.1;
+    animation: float ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-15px) scale(1.05); }
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Post indicator */
+  .post-indicators {
+    position: fixed; top: 70px; right: 16px; z-index: 50;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+
+  .post-dot {
+    width: 3px; border-radius: 2px;
+    background: rgba(255,248,238,0.2);
+    transition: all 0.3s ease;
+  }
+
+  .post-dot.active {
+    background: var(--tag-color);
+    height: 20px !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+<div class="grain"></div>
+
+<!-- TOP NAV -->
+<nav class="nav">
+  <div class="nav-logo">alive</div>
+  <div class="nav-time" id="timeLabel">afternoon</div>
+  <div class="nav-avatar">✦</div>
+</nav>
+
+<!-- POST INDICATORS -->
+<div class="post-indicators" id="indicators"></div>
+
+<!-- FEED -->
+<div class="feed" id="feed">
+  <div class="posts-container" id="postsContainer">
+
+    <!-- POST 1 -->
+    <div class="post">
+      <div class="post-media bg-pottery">
+        <div class="post-visual">🏺</div>
+        <div class="post-visual-detail" style="width:300px;height:300px;top:10%;left:-10%;background:radial-gradient(circle,#c17f4a,transparent);animation-duration:6s;"></div>
+      </div>
+      <div class="post-gradient"></div>
+      <div class="post-content" id="pc0">
+        <div class="post-meta">
+          <div class="post-avatar" style="background:linear-gradient(135deg,#c17f4a,#8b4a20);">🌸</div>
+          <div class="post-user">
+            <div class="post-username">maya_creates</div>
+            <div class="post-location">📍 Greenwich Village</div>
+          </div>
+          <div class="post-tag">Make things</div>
+        </div>
+        <div class="post-caption">"First time throwing on a wheel. My hands have never felt so alive."</div>
+        <div class="reactions-bar">
+          <div class="react-btn" onclick="fireReaction(this, '🔥')"><span>🔥</span><span class="count">24</span></div>
+          <div class="react-btn" onclick="fireReaction(this, '🙌')"><span>🙌</span><span class="count">11</span></div>
+          <div class="react-btn" onclick="fireReaction(this, '💡')"><span>💡</span><span class="count">8</span></div>
+          <div class="convo-trigger" onclick="toggleConvo(0)">
+            <span class="bubble">💬</span>
+            <span>14 in conversation</span>
+          </div>
+        </div>
+        <div class="swipe-hint">↑ swipe for next</div>
+      </div>
+      <div class="convo-drawer" id="cd0">
+        <div class="drawer-handle"></div>
+        <div class="drawer-header">
+          <div class="drawer-title">the conversation</div>
+          <div class="drawer-count">14 people</div>
+        </div>
+        <div class="convo-list">
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#4a8aff,#2a4aaa);">🎵</div>
+            <div class="convo-body">
+              <div class="convo-user">jordan_nyc <span class="convo-badge">Make things</span></div>
+              <div class="convo-text">I took a class at Mudspot last month — completely changed how I spend Sundays. <span class="reaction-inline">🙌 I want in</span></div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#ff6b9d,#aa2a5a);">🌿</div>
+            <div class="convo-body">
+              <div class="convo-user">reese.makes</div>
+              <div class="convo-text">That first pull on the clay — nothing compares. Where in the village?</div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#39ff14,#0a6a00);">🏙️</div>
+            <div class="convo-body">
+              <div class="convo-user">maya_creates <span class="convo-badge">Make things</span></div>
+              <div class="convo-text">@reese.makes — Choplet Studio on Perry St! They do drop-in sessions Sat mornings ✨</div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#ffd700,#aa7000);">🗺️</div>
+            <div class="convo-body">
+              <div class="convo-user">dev.builds <span class="convo-badge">Explore</span></div>
+              <div class="convo-text">Adding this to my alive list. <span class="reaction-inline">💡 sparked something</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="convo-input-row">
+          <input class="convo-input" placeholder="join the conversation..." />
+          <button class="convo-send">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST 2 -->
+    <div class="post">
+      <div class="post-media bg-run">
+        <div class="post-visual">🏃</div>
+        <div class="post-visual-detail" style="width:350px;height:350px;top:-5%;right:-15%;background:radial-gradient(circle,#00d4ff,transparent);animation-duration:8s;animation-delay:-2s;"></div>
+      </div>
+      <div class="post-gradient"></div>
+      <div class="post-content" id="pc1">
+        <div class="post-meta">
+          <div class="post-avatar" style="background:linear-gradient(135deg,#00d4ff,#0060aa);">🏃</div>
+          <div class="post-user">
+            <div class="post-username">run.with.sam</div>
+            <div class="post-location">📍 Central Park</div>
+          </div>
+          <div class="post-tag">Get outside</div>
+        </div>
+        <div class="post-caption">"6am run club. 12 strangers. Zero phones. Just breath and the park waking up."</div>
+        <div class="reactions-bar">
+          <div class="react-btn" onclick="fireReaction(this,'🔥')"><span>🔥</span><span class="count">41</span></div>
+          <div class="react-btn" onclick="fireReaction(this,'🙌')"><span>🙌</span><span class="count">29</span></div>
+          <div class="react-btn" onclick="fireReaction(this,'👀')"><span>👀</span><span class="count">17</span></div>
+          <div class="convo-trigger" onclick="toggleConvo(1)">
+            <span class="bubble">💬</span>
+            <span>31 in conversation</span>
+          </div>
+        </div>
+        <div class="swipe-hint">↑ swipe for next</div>
+      </div>
+      <div class="convo-drawer" id="cd1">
+        <div class="drawer-handle"></div>
+        <div class="drawer-header">
+          <div class="drawer-title">the conversation</div>
+          <div class="drawer-count">31 people</div>
+        </div>
+        <div class="convo-list">
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#ff8c00,#aa4400);">🍜</div>
+            <div class="convo-body">
+              <div class="convo-user">alex.eats <span class="convo-badge">Get outside</span></div>
+              <div class="convo-text">Zero phones is the rule that changes everything. <span class="reaction-inline">🎯 nailed it</span></div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#c17f4a,#6a3a10);">✍️</div>
+            <div class="convo-body">
+              <div class="convo-user">tomas.writes</div>
+              <div class="convo-text">How do I find the next one? I need this in my life like yesterday.</div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#00d4ff,#0060aa);">🏃</div>
+            <div class="convo-body">
+              <div class="convo-user">run.with.sam <span class="convo-badge">Get outside</span></div>
+              <div class="convo-text">@tomas.writes — every Saturday 6am, meet at the Bethesda Fountain. Just show up 🌅</div>
+            </div>
+          </div>
+        </div>
+        <div class="convo-input-row">
+          <input class="convo-input" placeholder="join the conversation..." />
+          <button class="convo-send">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST 3 -->
+    <div class="post">
+      <div class="post-media bg-music">
+        <div class="post-visual">🎸</div>
+        <div class="post-visual-detail" style="width:280px;height:280px;bottom:20%;left:5%;background:radial-gradient(circle,#9a7acc,transparent);animation-duration:7s;animation-delay:-3s;"></div>
+      </div>
+      <div class="post-gradient"></div>
+      <div class="post-content" id="pc2">
+        <div class="post-meta">
+          <div class="post-avatar" style="background:linear-gradient(135deg,#9a7acc,#4a2a8a);">🎸</div>
+          <div class="post-user">
+            <div class="post-username">leo.jams</div>
+            <div class="post-location">📍 Bushwick</div>
+          </div>
+          <div class="post-tag">Make music</div>
+        </div>
+        <div class="post-caption">"Spontaneous session in a warehouse. Never met these people before. Left with 3 new friends and a song."</div>
+        <div class="reactions-bar">
+          <div class="react-btn" onclick="fireReaction(this,'🔥')"><span>🔥</span><span class="count">67</span></div>
+          <div class="react-btn" onclick="fireReaction(this,'🫲')"><span>🫲</span><span class="count">44</span></div>
+          <div class="react-btn" onclick="fireReaction(this,'💡')"><span>💡</span><span class="count">22</span></div>
+          <div class="convo-trigger" onclick="toggleConvo(2)">
+            <span class="bubble">💬</span>
+            <span>58 in conversation</span>
+          </div>
+        </div>
+        <div class="swipe-hint">↑ swipe for next</div>
+      </div>
+      <div class="convo-drawer" id="cd2">
+        <div class="drawer-handle"></div>
+        <div class="drawer-header">
+          <div class="drawer-title">the conversation</div>
+          <div class="drawer-count">58 people</div>
+        </div>
+        <div class="convo-list">
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#ff6b9d,#aa2a5a);">🌸</div>
+            <div class="convo-body">
+              <div class="convo-user">maya_creates <span class="convo-badge">Make things</span></div>
+              <div class="convo-text">This is exactly what Alive is for. <span class="reaction-inline">🫲 I feel this</span></div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#39ff14,#0a6a00);">🎹</div>
+            <div class="convo-body">
+              <div class="convo-user">nadia.keys</div>
+              <div class="convo-text">Is this a recurring thing or was it one night? I play keys and I'm desperate for exactly this.</div>
+            </div>
+          </div>
+          <div class="convo-item">
+            <div class="convo-avatar" style="background:linear-gradient(135deg,#9a7acc,#4a2a8a);">🎸</div>
+            <div class="convo-body">
+              <div class="convo-user">leo.jams <span class="convo-badge">Make music</span></div>
+              <div class="convo-text">@nadia.keys — we're making it recurring. Keys player is exactly what we need. DM me 🎹</div>
+            </div>
+          </div>
+        </div>
+        <div class="convo-input-row">
+          <input class="convo-input" placeholder="join the conversation..." />
+          <button class="convo-send">↑</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- REACTION PICKER -->
+<div class="reaction-picker" id="reactionPicker">
+  <div class="pick-item" onclick="pickReaction('🔥','fire')"><div class="pick-emoji">🔥</div><div class="pick-label">fire</div></div>
+  <div class="pick-item" onclick="pickReaction('🙌','want in')"><div class="pick-emoji">🙌</div><div class="pick-label">want in</div></div>
+  <div class="pick-item" onclick="pickReaction('💡','sparked')"><div class="pick-emoji">💡</div><div class="pick-label">sparked</div></div>
+  <div class="pick-item" onclick="pickReaction('🎯','nailed it')"><div class="pick-emoji">🎯</div><div class="pick-label">nailed it</div></div>
+  <div class="pick-item" onclick="pickReaction('👀','tell more')"><div class="pick-emoji">👀</div><div class="pick-label">tell more</div></div>
+  <div class="pick-item" onclick="pickReaction('🫲','feel this')"><div class="pick-emoji">🫲</div><div class="pick-label">feel this</div></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item active"><div class="nav-icon">✦</div><div class="nav-label">Feed</div></div>
+  <div class="nav-item"><div class="nav-icon">🗺️</div><div class="nav-label">Explore</div></div>
+  <div class="nav-item"><div class="nav-icon">＋</div><div class="nav-label">Share</div></div>
+  <div class="nav-item"><div class="nav-icon">🔔</div><div class="nav-label">Activity</div></div>
+  <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></div>
+</nav>
+
+<script>
+  // ── TIME OF DAY ──
+  const timeMap = [
+    { label: 'late night',    cls: 'night',     range: [0,5] },
+    { label: 'dawn',          cls: 'dawn',      range: [5,8] },
+    { label: 'morning',       cls: 'morning',   range: [8,12] },
+    { label: 'afternoon',     cls: 'afternoon', range: [12,17] },
+    { label: 'golden hour',   cls: 'golden',    range: [17,20] },
+    { label: 'evening',       cls: 'evening',   range: [20,23] },
+    { label: 'late night',    cls: 'night',     range: [23,24] },
+  ];
+
+  function applyTime() {
+    const h = new Date().getHours();
+    const t = timeMap.find(t => h >= t.range[0] && h < t.range[1]) || timeMap[0];
+    document.body.className = t.cls;
+    document.getElementById('timeLabel').textContent = t.label;
+  }
+  applyTime();
+
+  // ── SWIPE / SCROLL ──
+  const NUM_POSTS = 3;
+  let currentPost = 0;
+  let startY = 0;
+  let dragging = false;
+  let anyConvoOpen = false;
+
+  function buildIndicators() {
+    const el = document.getElementById('indicators');
+    el.innerHTML = '';
+    for (let i = 0; i < NUM_POSTS; i++) {
+      const d = document.createElement('div');
+      d.className = 'post-dot' + (i === 0 ? ' active' : '');
+      d.style.height = i === 0 ? '20px' : '8px';
+      el.appendChild(d);
+    }
+  }
+
+  function updateIndicators() {
+    const dots = document.querySelectorAll('.post-dot');
+    dots.forEach((d, i) => {
+      d.classList.toggle('active', i === currentPost);
+      d.style.height = i === currentPost ? '20px' : '8px';
+    });
+  }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= NUM_POSTS) return;
+    // close any open convo
+    closeAllConvos();
+    currentPost = idx;
+    document.getElementById('postsContainer').style.transform = `translateY(-${currentPost * 100}vh)`;
+    updateIndicators();
+  }
+
+  const feed = document.getElementById('feed');
+
+  feed.addEventListener('touchstart', e => {
+    if (anyConvoOpen) return;
+    startY = e.touches[0].clientY;
+    dragging = true;
+  }, { passive: true });
+
+  feed.addEventListener('touchend', e => {
+    if (!dragging) return;
+    const diff = startY - e.changedTouches[0].clientY;
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? goTo(currentPost + 1) : goTo(currentPost - 1);
+    }
+    dragging = false;
+  }, { passive: true });
+
+  // Mouse wheel for desktop
+  let wheelLocked = false;
+  feed.addEventListener('wheel', e => {
+    if (anyConvoOpen) return;
+    if (wheelLocked) return;
+    wheelLocked = true;
+    setTimeout(() => wheelLocked = false, 800);
+    e.deltaY > 0 ? goTo(currentPost + 1) : goTo(currentPost - 1);
+  }, { passive: true });
+
+  // ── CONVERSATION ──
+  function toggleConvo(idx) {
+    const drawer = document.getElementById('cd' + idx);
+    const content = document.getElementById('pc' + idx);
+    const isOpen = drawer.classList.contains('open');
+    closeAllConvos();
+    if (!isOpen) {
+      drawer.classList.add('open');
+      content.classList.add('conversation-open');
+      anyConvoOpen = true;
+    }
+  }
+
+  function closeAllConvos() {
+    for (let i = 0; i < NUM_POSTS; i++) {
+      const d = document.getElementById('cd' + i);
+      const c = document.getElementById('pc' + i);
+      if (d) d.classList.remove('open');
+      if (c) c.classList.remove('conversation-open');
+    }
+    anyConvoOpen = false;
+  }
+
+  // tap background to close convo
+  feed.addEventListener('click', e => {
+    if (anyConvoOpen && !e.target.closest('.convo-drawer') && !e.target.closest('.convo-trigger') && !e.target.closest('.reactions-bar')) {
+      closeAllConvos();
+    }
+  });
+
+  // ── REACTIONS ──
+  function fireReaction(btn, emoji) {
+    btn.classList.toggle('fired');
+    const countEl = btn.querySelector('.count');
+    const n = parseInt(countEl.textContent);
+    countEl.textContent = btn.classList.contains('fired') ? n + 1 : n - 1;
+    // bounce
+    btn.style.transform = 'scale(1.3)';
+    setTimeout(() => btn.style.transform = '', 300);
+  }
+
+  let pickerTimeout;
+  function pickReaction(emoji, label) {
+    document.getElementById('reactionPicker').classList.remove('visible');
+  }
+
+  buildIndicators();
+</script>
+</body>
+</html>
