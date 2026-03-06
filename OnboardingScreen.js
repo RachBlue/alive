@@ -21,7 +21,7 @@ const MESSAGES = {
   6: "you're exactly who Alive is for",
 };
 
-export default function OnboardingScreen({ onComplete }) {
+export default function OnboardingScreen({ navigation }) {
   const [selected, setSelected] = useState(new Set());
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const headerTranslate = useRef(new Animated.Value(24)).current;
@@ -144,7 +144,7 @@ export default function OnboardingScreen({ onComplete }) {
         <Animated.View style={{ transform: [{ scale: btnScale }], width: '100%' }}>
           <TouchableOpacity
             style={[styles.btnCta, count > 0 && styles.btnCtaReady]}
-            onPress={() => count > 0 && onComplete && onComplete(Array.from(selected))}
+            onPress={() => count > 0 && navigation.navigate('Feed')}
             activeOpacity={0.85}
           >
             <Text style={[styles.btnCtaText, count > 0 && styles.btnCtaTextReady]}>

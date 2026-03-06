@@ -117,6 +117,30 @@ export default function FeedScreen() {
     }).start();
   }, [currentPost]);
 
+  // ← NEW: mouse wheel support for web
+  useEffect(() => {
+  const handleWheel = (e) => {
+    if (e.deltaY > 50 && currentPost < POSTS.length - 1) {
+      setCurrentPost(prev => prev + 1);
+    } else if (e.deltaY < -50 && currentPost > 0) {
+      setCurrentPost(prev => prev - 1);
+    }
+  };
+  const handleKey = (e) => {
+    if (e.key === 'ArrowDown' && currentPost < POSTS.length - 1) {
+      setCurrentPost(prev => prev + 1);
+    } else if (e.key === 'ArrowUp' && currentPost > 0) {
+      setCurrentPost(prev => prev - 1);
+    }
+  };
+  window.addEventListener('wheel', handleWheel);
+  window.addEventListener('keydown', handleKey);
+  return () => {
+    window.removeEventListener('wheel', handleWheel);
+    window.removeEventListener('keydown', handleKey);
+  };
+}, [currentPost]);
+
   function toggleConvo(postId) {
     if (openConvo === postId) {
       Animated.timing(convoTranslate, { toValue: 300, duration: 350, useNativeDriver: true }).start(() => setOpenConvo(null));

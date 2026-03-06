@@ -13,7 +13,7 @@ const SCENES = [
   { colors: ['#1a1020', '#3a2040', '#6a4070', '#9a70aa'], caption: 'making music with strangers who become friends' },
 ];
 
-export default function LoginScreen({ onComplete }) {
+export default function LoginScreen({ navigation }) {
   const [sceneIndex, setSceneIndex] = useState(0);
   const [caption, setCaption] = useState(SCENES[0].caption);
   const captionOpacity = useRef(new Animated.Value(1)).current;
@@ -92,7 +92,7 @@ export default function LoginScreen({ onComplete }) {
             placeholderTextColor="rgba(245,240,232,0.4)"
             secureTextEntry
           />
-          <TouchableOpacity style={styles.btnPrimary} activeOpacity={0.85} onPress={onComplete}>
+          <TouchableOpacity style={styles.btnPrimary} activeOpacity={0.85} onPress={() => navigation.navigate('Onboarding')}>
             <Text style={styles.btnPrimaryText}>Come Alive</Text>
           </TouchableOpacity>
 

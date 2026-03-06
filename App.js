@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './LoginScreen';
 import OnboardingScreen from './OnboardingScreen';
 import FeedScreen from './FeedScreen';
 
-export default function App() {
-  const [screen, setScreen] = useState('login');
+const Stack = createNativeStackNavigator();
 
-  if (screen === 'login') {
-    return <LoginScreen onComplete={() => setScreen('onboarding')} />;
-  }
-  if (screen === 'onboarding') {
-    return <OnboardingScreen onComplete={() => setScreen('feed')} />;
-  }
-  if (screen === 'feed') {
-    return <FeedScreen />;
-  }
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="Feed" component={FeedScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }
