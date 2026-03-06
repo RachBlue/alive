@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Animated, ScrollView, TextInp
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useEffect, useRef, useState } from 'react';
+import { usePosts } from './usePosts';
 
 const { width, height } = Dimensions.get('window');
 
@@ -78,12 +79,13 @@ const REACTIONS = [
   { emoji: '🫲', label: 'feel this' },
 ];
 
-export default function FeedScreen() {
+export default function FeedScreen({ navigation }) {
   const [currentPost, setCurrentPost] = useState(0);
   const [openConvo, setOpenConvo] = useState(null);
   const [reactions, setReactions] = useState(POSTS.map(p => ({ ...p.reactions })));
   const [firedReactions, setFiredReactions] = useState({});
   const timeOfDay = getTimeOfDay();
+  const { posts, loading } = usePosts();
 
   const translateY = useRef(new Animated.Value(0)).current;
   const convoTranslate = useRef(new Animated.Value(300)).current;
@@ -166,7 +168,16 @@ export default function FeedScreen() {
 
       {/* Posts */}
       <Animated.View style={[styles.postsContainer, { transform: [{ translateY }] }]}>
-        {POSTS.map((post, index) => (
+  {(posts.length > 0 ? posts.map((post, index) => ({
+    ...post,
+    avatar: '🌸',
+    avatarColors: ['#c17f4a', '#8b4a20'],
+    bgColors: ['#2a1810', '#5c3520', '#8b6040', '#b08060'],
+    reactions: { '🔥': 0, '🙌': 0, '💡': 0 },
+    convoCount: 0,
+    conversation: [],
+    tag: post.category,
+  })) : POSTS).map((post, index) => (
           <View key={post.id} style={styles.post}>
             <LinearGradient colors={post.bgColors} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
             <LinearGradient
@@ -290,7 +301,7 @@ export default function FeedScreen() {
       <Animated.View style={[styles.bottomNav, { opacity: navOpacity }]}>
         <BlurView intensity={20} tint="dark" style={styles.bottomNavBlur}>
           {[['✦', 'Feed'], ['🗺️', 'Explore'], ['＋', 'Share'], ['🔔', 'Activity'], ['👤', 'Profile']].map(([icon, label], i) => (
-            <TouchableOpacity key={label} style={[styles.navItem, i === 0 && styles.navItemActive]} activeOpacity={0.7}>
+            <TouchableOpacity key={label} style={[styles.navItem, i === 0 && styles.navItemActive]} activeOpacity={0.7}onPress={() => i === 2 && navigation.navigate('Share')}>
               <Text style={styles.navIcon}>{icon}</Text>
               <Text style={[styles.navLabel, i === 0 && { color: timeOfDay.accent }]}>{label}</Text>
             </TouchableOpacity>
