@@ -7,15 +7,12 @@ export function usePosts() {
 
   useEffect(() => {
     fetchPosts();
-
-    // Real time listener — new posts appear instantly
     const subscription = supabase
       .channel('posts')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
         setPosts(prev => [payload.new, ...prev]);
       })
       .subscribe();
-
     return () => supabase.removeChannel(subscription);
   }, []);
 
@@ -25,7 +22,6 @@ export function usePosts() {
       .from('posts')
       .select('*')
       .order('created_at', { ascending: false });
-
     if (data) setPosts(data);
     setLoading(false);
   }
@@ -39,4 +35,64 @@ export function usePosts() {
   }
 
   return { posts, loading, createPost };
+}
+
+export function useMessages(postId) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!postId || typeof postId !== 'string' || postId.length < 10) return;
+    fetchMessages();
+
+    const subscription = supabase
+      .channel(`messages:${postId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `post_id=eq.${postId}`
+      }, payload => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(subscription);
+  }, [postId]);
+
+  async function fetchMessages() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) console.error('messages error:', error);
+    if (data) setMessages(data);
+    setLoading(false);
+  }
+
+async function sendMessage(text, username) {
+    if (!postId || typeof postId !== 'string' || postId.length < 10) {
+      console.error('invalid postId:', postId);
+      return;
+    }
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      console.error('user error:', userError);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        post_id: postId,
+        user_id: user.id,
+        username: username || user.email.split('@')[0],
+        text,
+      });
+    if (error) console.error('send error:', error);
+  }
+
+  return { messages, loading, sendMessage };
 }
