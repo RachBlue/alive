@@ -1,8 +1,9 @@
+import { supabase } from './supabase';
+import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Dimensions, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { useEffect, useRef, useState } from 'react';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,8 +15,13 @@ const SCENES = [
 ];
 
 export default function LoginScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [sceneIndex, setSceneIndex] = useState(0);
   const [caption, setCaption] = useState(SCENES[0].caption);
+
   const captionOpacity = useRef(new Animated.Value(1)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslate = useRef(new Animated.Value(40)).current;
@@ -44,6 +50,30 @@ export default function LoginScreen({ navigation }) {
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  async function handleLogin() {
+    setLoading(true);
+    setError('');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+    } else {
+      navigation.navigate('Onboarding');
+    }
+    setLoading(false);
+  }
+
+  async function handleSignUp() {
+    setLoading(true);
+    setError('');
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setError(error.message);
+    } else {
+      navigation.navigate('Onboarding');
+    }
+    setLoading(false);
+  }
 
   return (
     <View style={styles.container}>
@@ -85,15 +115,27 @@ export default function LoginScreen({ navigation }) {
             placeholderTextColor="rgba(245,240,232,0.4)"
             keyboardType="email-address"
             autoCapitalize="none"
+            onChangeText={setEmail}
+            value={email}
           />
           <TextInput
             style={styles.input}
             placeholder="password"
             placeholderTextColor="rgba(245,240,232,0.4)"
             secureTextEntry
+            onChangeText={setPassword}
+            value={password}
           />
-          <TouchableOpacity style={styles.btnPrimary} activeOpacity={0.85} onPress={() => navigation.navigate('Onboarding')}>
-            <Text style={styles.btnPrimaryText}>Come Alive</Text>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <TouchableOpacity
+            style={styles.btnPrimary}
+            activeOpacity={0.85}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.btnPrimaryText}>
+              {loading ? 'Coming Alive...' : 'Come Alive'}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.divider}>
@@ -107,7 +149,10 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
 
           <Text style={styles.signupText}>
-            New here? <Text style={styles.signupLink}>Join the community →</Text>
+            New here?{' '}
+            <Text style={styles.signupLink} onPress={handleSignUp}>
+              Join the community →
+            </Text>
           </Text>
         </BlurView>
       </Animated.View>
@@ -255,5 +300,12 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     color: 'rgba(193,127,74,0.85)',
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 12,
+    fontWeight: '300',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
 });
